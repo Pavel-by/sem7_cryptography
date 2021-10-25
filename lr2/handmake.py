@@ -1,4 +1,5 @@
 import numpy as np
+from tabulate import tabulate
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
@@ -49,14 +50,14 @@ def generate_keys(_key, _rounds):
     print("Generating keys")
     _bits = symbols_to_bits(_key).reshape([8, 7])
     _bits = np.append(_bits, np.zeros([8,1], dtype=np.int64), axis=1)
-    print("Key bits\n", _bits)
+    print("Key bits\n", tabulate(_bits))
     _bits = np.take(_bits.reshape([-1]), KEY_E).reshape(8, 7)
-    print("Applying E\n", _bits)
+    print("Applying E\n", tabulate(_bits))
 
     _C = _bits[:len(_bits)//2]
     _D = _bits[len(_bits)//2:]
-    print("C\n", _C)
-    print("D\n", _D)
+    print("C\n", tabulate(_C))
+    print("D\n", tabulate(_D))
     
     _keys = []
     for _round in range(_rounds):
@@ -65,8 +66,9 @@ def generate_keys(_key, _rounds):
         _round_key = np.append(_C, _D)
         _round_key = np.take(_round_key, KEY_CP)
         _keys.append(_round_key)
-        print("Round key {0}\n".format(_round + 1), _round_key.reshape(8, 6))
+        print("Round key {0}\n".format(_round + 1), tabulate(_round_key.reshape(8, 6)))
 
+    print("Keys generated")
     return _keys
     
 
@@ -94,16 +96,23 @@ def encode(_symbols, _key, _rounds):
     assert(len(_bits) == 64)
     print("Encoding {0}".format(_symbols))
     _keys = generate_keys(_key, _rounds)
+    print("Input bits\n", tabulate(_bits.reshape([8, -1])))
     _bits = np.take(_bits, IP)
+    print("Applying IP\n", tabulate(_bits.reshape([8, -1])))
     _A = _bits[:len(_bits)//2]
     _B = _bits[len(_bits)//2:]
+    print("A0\n", tabulate(_A.reshape([4, 8])))
+    print("B0\n", tabulate(_B.reshape([4, 8])))
 
     for _round in range(_rounds):
         print("Round {0}".format(_round + 1))
         _A, _B = _B, np.logical_xor(_A, f(_B, _keys[_round])) * 1
+        print("A{0}\n".format(_round + 1), tabulate(_A.reshape([4, 8])))
+        print("B{0}\n".format(_round + 1), tabulate(_B.reshape([4, 8])))
         
     _bits = np.append(_A, _B)
     _bits = np.take(_bits, IP_1)
+    print("Applying IP_1\n", tabulate(_bits.reshape([8, -1])))
 
     return bits_to_symbols(_bits)
 
@@ -131,10 +140,10 @@ key = "838208d"
 rounds = 2
 
 encoded = encode("mironchi", key, rounds)
-print([ord(c) for c in encoded], encoded)
+print(tabulate([[ord(c) for c in encoded]]), '\n', encoded)
 
-print("-----------------------------------")
+'''print("-----------------------------------")
 
 decoded = decode(encoded, key, rounds)
-print([ord(c) for c in decoded], decoded)
+print(tabulate([[ord(c) for c in decoded]]), '\n', decoded)'''
 
